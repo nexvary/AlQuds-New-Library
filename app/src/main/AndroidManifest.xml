@@ -5,7 +5,7 @@
         android:allowBackup="true"
         android:label="مكتبة القدس الجديدة"
         android:icon="@drawable/al_quds_library_icon"
-        android:theme="@style/Theme.NEXVARYLibrary"
+        android:theme="@style/Theme.AlQudsLibrary"
         android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
