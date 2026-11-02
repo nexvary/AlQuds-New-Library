@@ -166,11 +166,11 @@ public class MainActivityTest {
         String name = "ui-fault-" + UUID.randomUUID() + ".db";
         CatalogDatabase isolated = new CatalogDatabase(app, name);
         long bookId = isolated.search("").get(0).id;
-        AtomicBoolean failFirstRead = new AtomicBoolean(true);
+        AtomicBoolean storageUnavailable = new AtomicBoolean(true);
         java.util.concurrent.CountDownLatch closed = new java.util.concurrent.CountDownLatch(1);
         app.catalogFactory = context -> new CatalogSource() {
             @Override public List<Book> search(String query) {
-                if (failFirstRead.getAndSet(false)) throw new SQLiteCantOpenDatabaseException("injected test failure");
+                if (storageUnavailable.get()) throw new SQLiteCantOpenDatabaseException("injected test failure");
                 return isolated.search(query);
             }
             @Override public void close() { isolated.close(); closed.countDown(); }
@@ -178,6 +178,7 @@ public class MainActivityTest {
         try {
             try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
                 awaitText(scenario, "تعذر فتح الفهرس. لم تُحذف بياناتك.");
+                storageUnavailable.set(false);
                 scenario.onActivity(activity -> button(activity, "إعادة المحاولة").performClick());
                 awaitText(scenario, "النتائج: ");
                 assertEquals(bookId, isolated.search("").get(0).id);

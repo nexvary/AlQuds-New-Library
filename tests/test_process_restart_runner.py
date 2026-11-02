@@ -6,6 +6,11 @@ from run_process_restart import run_probe
 
 
 class ProcessProbeRunnerTests(unittest.TestCase):
+    def setUp(self):
+        output = patch("run_process_restart.print")
+        output.start()
+        self.addCleanup(output.stop)
+
     @patch("run_process_restart.subprocess.run")
     def test_accepts_one_successful_test(self, run):
         run.return_value = subprocess.CompletedProcess([], 0, "OK (1 test)\nINSTRUMENTATION_CODE: -1", "")
@@ -29,3 +34,9 @@ class ProcessProbeRunnerTests(unittest.TestCase):
         run.return_value = subprocess.CompletedProcess([], 0, "INSTRUMENTATION_FAILED: Process crashed.", "")
         with self.assertRaises(RuntimeError):
             run_probe("verify")
+
+    @patch("run_process_restart.subprocess.run")
+    def test_adb_nonzero_exit_cannot_pass(self, run):
+        run.return_value = subprocess.CompletedProcess([], 1, "", "adb failed")
+        with self.assertRaises(subprocess.CalledProcessError):
+            run_probe("prepare")
