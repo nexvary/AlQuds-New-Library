@@ -3,3 +3,21 @@
 المستودع الرسمي لتطبيق مكتبة القدس الجديدة.
 
 سيتم اعتماد GitHub Actions كبوابة بناء وفحص، ومراجعة المصادر والروابط الخارجية قبل التسليم.
+
+
+## التطوير الحالي
+
+تطبيق Android أصلي تجريبي، يستكمل الهيكل الموجود في `dev/release-gate`.
+يوفر فهرساً محلياً، بحثاً عربياً بالبيانات الوصفية، تفاصيل سجل، مفضلة على الجهاز، ووضعاً ليلياً ونهارياً. يوجد سجل توضيحي واحد معلن بوضوح، ولا توجد ملفات كتب أو حسابات أو مزامنة بعد.
+
+### التشغيل والفحص
+
+المتطلبات: JDK 17، Gradle 8.9، Android SDK 35. لا يتوفر Gradle Wrapper حالياً؛ استخدم نسخة Gradle المحددة.
+
+```sh
+python3 -m unittest discover -s tests -v
+gradle --no-daemon testDebugUnitTest assembleDebug lintDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+راجع [التقرير الفني](docs/TECHNICAL_AUDIT.md) و[سجل المراحل](DEVELOPMENT_PROGRESS.md). نجاح اختبارات Python لا يعني نجاح بناء Android. النسخة ليست إصدار إنتاج، ولا تُرسل استعلامات البحث أو المفضلة خارج الجهاز.

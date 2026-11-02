@@ -1,5 +1,8 @@
 name: Android Release Gate
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main, 'dev/**' ]
@@ -31,11 +34,12 @@ jobs:
       - name: Static source checks
         run: |
           test -f app/src/main/AndroidManifest.xml
-          test -f app/src/main/java/com/nexvary/library/MainActivity.java
-          grep -q 'مكتبة القدس الجديدة' app/src/main/java/com/nexvary/library/MainActivity.java
+          python3 -m unittest discover -s tests -v
+          test -f app/src/main/java/org/alquds/library/MainActivity.java
+          grep -q 'مكتبة القدس الجديدة' app/src/main/java/org/alquds/library/MainActivity.java
           grep -q 'android.permission.INTERNET' app/src/main/AndroidManifest.xml
-      - name: Build debug APK
-        run: gradle --no-daemon clean assembleDebug
+      - name: Build and unit test
+        run: gradle --no-daemon clean testDebugUnitTest assembleDebug
       - name: Run lint
         run: gradle --no-daemon lintDebug
       - name: Upload APK
@@ -44,3 +48,4 @@ jobs:
           name: AlQuds-New-Library-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
