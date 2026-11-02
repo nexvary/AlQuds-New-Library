@@ -22,30 +22,31 @@ public class ProcessRestartProbe {
         SharedPreferences marker = context().getSharedPreferences("process-restart-probe", Context.MODE_PRIVATE);
         assertFalse("Unfinished probe; use a clean test emulator", marker.getBoolean("ready", false));
         long bookId;
+        boolean originalFavorite;
         try (CatalogDatabase database = new CatalogDatabase(context())) {
-            bookId = database.search("").get(0).id;
+            Book book = database.search("").get(0);
+            bookId = book.id;
+            originalFavorite = book.favorite;
         }
-        String key = "favorite." + bookId;
         assertTrue(marker.edit().putBoolean("hadTheme", settings.contains("dark"))
                 .putBoolean("theme", settings.getBoolean("dark", false))
-                .putBoolean("hadFavorite", settings.contains(key))
-                .putBoolean("favorite", settings.getBoolean(key, false))
+                .putBoolean("favorite", originalFavorite)
                 .putLong("bookId", bookId).putInt("pid", android.os.Process.myPid())
                 .putBoolean("ready", true).commit());
-        assertTrue(settings.edit().putBoolean("dark", true).putBoolean(key, true).commit());
+        assertTrue(settings.edit().putBoolean("dark", true).commit());
+        try (CatalogDatabase database = new CatalogDatabase(context())) { database.setFavorite(bookId, true); }
     }
 
     @Test public void verify() {
         SharedPreferences settings = context().getSharedPreferences("library", Context.MODE_PRIVATE);
         SharedPreferences marker = context().getSharedPreferences("process-restart-probe", Context.MODE_PRIVATE);
         assertTrue("Prepare must run in a previous process", marker.getBoolean("ready", false));
-        String key = "favorite." + marker.getLong("bookId", -1);
         try {
             assertNotEquals("Must use a new Android process", marker.getInt("pid", -1), android.os.Process.myPid());
             assertTrue(settings.getBoolean("dark", false));
-            assertTrue(settings.getBoolean(key, false));
             try (CatalogDatabase database = new CatalogDatabase(context())) {
-                assertEquals(marker.getLong("bookId", -1), database.search("").get(0).id);
+                assertEquals(marker.getLong("bookId", -1), database.search("", true).get(0).id);
+                assertTrue(database.search("", true).get(0).favorite);
             }
             try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
                 scenario.onActivity(activity -> assertTrue(containsText(
@@ -55,9 +56,10 @@ public class ProcessRestartProbe {
             SharedPreferences.Editor restore = settings.edit();
             if (marker.getBoolean("hadTheme", false)) restore.putBoolean("dark", marker.getBoolean("theme", false));
             else restore.remove("dark");
-            if (marker.getBoolean("hadFavorite", false)) restore.putBoolean(key, marker.getBoolean("favorite", false));
-            else restore.remove(key);
             assertTrue(restore.commit());
+            try (CatalogDatabase database = new CatalogDatabase(context())) {
+                database.setFavorite(marker.getLong("bookId", -1), marker.getBoolean("favorite", false));
+            }
             assertTrue(marker.edit().clear().commit());
         }
     }

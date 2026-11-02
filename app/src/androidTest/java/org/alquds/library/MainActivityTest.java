@@ -170,9 +170,13 @@ public class MainActivityTest {
         java.util.concurrent.CountDownLatch closed = new java.util.concurrent.CountDownLatch(1);
         app.catalogFactory = context -> new CatalogSource() {
             @Override public List<Book> search(String query) {
-                if (storageUnavailable.get()) throw new SQLiteCantOpenDatabaseException("injected test failure");
-                return isolated.search(query);
+                return search(query, false);
             }
+            @Override public List<Book> search(String query, boolean favoritesOnly) {
+                if (storageUnavailable.get()) throw new SQLiteCantOpenDatabaseException("injected test failure");
+                return isolated.search(query, favoritesOnly);
+            }
+            @Override public void setFavorite(long bookId, boolean favorite) { isolated.setFavorite(bookId, favorite); }
             @Override public void close() { isolated.close(); closed.countDown(); }
         };
         try {
@@ -195,5 +199,94 @@ public class MainActivityTest {
             isolated.close();
             app.deleteDatabase(name);
         }
+    }
+
+    @Test public void favoriteCanBeAddedFilteredAndRemovedFromDetails() {
+        exerciseFavoriteSave(false);
+    }
+
+    @Test public void failedFavoriteWriteKeepsStateAndAllowsAnotherAttempt() {
+        exerciseFavoriteSave(true);
+    }
+
+    private void exerciseFavoriteSave(boolean failInitially) {
+        LibraryApplication app = (LibraryApplication) InstrumentationRegistry.getInstrumentation()
+                .getTargetContext().getApplicationContext();
+        LibraryApplication.CatalogFactory original = app.catalogFactory;
+        String name = "ui-favorite-" + UUID.randomUUID() + ".db";
+        CatalogDatabase isolated = new CatalogDatabase(app, name);
+        Book book = isolated.search("").get(0);
+        String label = book.title + "\n" + book.author + "\n" + book.category;
+        AtomicBoolean rejectWrites = new AtomicBoolean(failInitially);
+        java.util.concurrent.CountDownLatch closed = new java.util.concurrent.CountDownLatch(1);
+        app.catalogFactory = context -> new CatalogSource() {
+            @Override public List<Book> search(String query) { return isolated.search(query); }
+            @Override public List<Book> search(String query, boolean favorites) { return isolated.search(query, favorites); }
+            @Override public void setFavorite(long id, boolean favorite) {
+                if (rejectWrites.get()) throw new SQLiteCantOpenDatabaseException("injected write failure");
+                isolated.setFavorite(id, favorite);
+            }
+            @Override public void close() { isolated.close(); closed.countDown(); }
+        };
+        try {
+            try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+                awaitText(scenario, "النتائج: ");
+                scenario.onActivity(activity -> button(activity, label).performClick());
+                clickDialogButton("إضافة إلى المفضلة");
+                if (failInitially) {
+                    awaitText(scenario, "تعذر حفظ المفضلة.");
+                    assertFalse(isolated.search("").get(0).favorite);
+                    rejectWrites.set(false);
+                    scenario.onActivity(activity -> button(activity, label).performClick());
+                    clickDialogButton("إضافة إلى المفضلة");
+                }
+                awaitFavorite(isolated, true);
+                awaitText(scenario, "النتائج: ");
+                scenario.onActivity(activity -> button(activity, "عرض مفضلتي على هذا الجهاز").performClick());
+                awaitText(scenario, "النتائج: ");
+                scenario.recreate();
+                awaitText(scenario, "النتائج: ");
+                scenario.onActivity(activity -> button(activity, label).performClick());
+                clickDialogButton("إزالة من المفضلة");
+                awaitFavorite(isolated, false);
+                awaitText(scenario, "لا توجد نتائج.");
+            }
+            assertTrue(closed.await(10, java.util.concurrent.TimeUnit.SECONDS));
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(error);
+        } finally {
+            app.catalogFactory = original;
+            isolated.close();
+            app.deleteDatabase(name);
+        }
+    }
+
+    private static void awaitFavorite(CatalogDatabase database, boolean favorite) {
+        long deadline = SystemClock.uptimeMillis() + 15000;
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (database.search("").get(0).favorite == favorite) return;
+            SystemClock.sleep(50);
+        }
+        fail("Favorite did not reach expected state");
+    }
+
+    private static void clickDialogButton(String label) {
+        long deadline = SystemClock.uptimeMillis() + 15000;
+        android.app.Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        while (SystemClock.uptimeMillis() < deadline) {
+            android.view.accessibility.AccessibilityNodeInfo root = instrumentation.getUiAutomation().getRootInActiveWindow();
+            if (root != null) {
+                for (android.view.accessibility.AccessibilityNodeInfo node : root.findAccessibilityNodeInfosByText(label)) {
+                    if (label.contentEquals(node.getText() == null ? "" : node.getText())
+                            && node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)) {
+                        instrumentation.waitForIdleSync();
+                        return;
+                    }
+                }
+            }
+            SystemClock.sleep(50);
+        }
+        fail("Dialog button was not actionable: " + label);
     }
 }

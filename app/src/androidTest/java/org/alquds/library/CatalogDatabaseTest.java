@@ -63,7 +63,7 @@ public class CatalogDatabaseTest {
         Book demo = helper.search("").get(0);
         assertTrue(demo.title.contains("سجل تجريبي"));
         assertEquals("metadata_only", demo.license);
-        assertEquals(1, helper.getReadableDatabase().getVersion());
+        assertEquals(CatalogDatabase.VERSION, helper.getReadableDatabase().getVersion());
         try (Cursor cursor = helper.getReadableDatabase().rawQuery("PRAGMA foreign_keys", null)) {
             assertTrue(cursor.moveToFirst());
             assertEquals(1, cursor.getInt(0));
@@ -145,7 +145,7 @@ public class CatalogDatabaseTest {
 
     @Test public void unsupportedDowngradeFailsWithoutDeletingData() {
         long id = addBook("محفوظ", "مؤلف محفوظ", "تصنيف محفوظ");
-        helper.getWritableDatabase().setVersion(2);
+        helper.getWritableDatabase().setVersion(CatalogDatabase.VERSION + 1);
         helper.close();
         helper = new CatalogDatabase(context, name);
         try {
@@ -157,9 +157,53 @@ public class CatalogDatabaseTest {
         try (SQLiteDatabase raw = SQLiteDatabase.openDatabase(
                 context.getDatabasePath(name).getPath(), null, SQLiteDatabase.OPEN_READONLY);
              Cursor cursor = raw.rawQuery("SELECT title FROM books WHERE id=?", new String[]{Long.toString(id)})) {
-            assertEquals(2, raw.getVersion());
+            assertEquals(CatalogDatabase.VERSION + 1, raw.getVersion());
             assertTrue(cursor.moveToFirst());
             assertEquals("محفوظ", cursor.getString(0));
         }
+    }
+
+    @Test public void favoritesPersistAndCanBeRemovedWithoutDuplicates() {
+        long id = helper.search("").get(0).id;
+        helper.setFavorite(id, true);
+        helper.setFavorite(id, true);
+        assertEquals(1, helper.search("", true).size());
+        helper.close();
+        helper = new CatalogDatabase(context, name);
+        assertTrue(helper.search("").get(0).favorite);
+        helper.setFavorite(id, false);
+        helper.setFavorite(id, false);
+        assertTrue(helper.search("", true).isEmpty());
+    }
+
+    @Test public void favoritesAreFilteredBeforeTheResultLimit() {
+        SQLiteDatabase db = helper.getWritableDatabase();
+        for (int i = 0; i < 120; i++) {
+            db.execSQL("INSERT INTO books(title,author_id,category_id,search_text) VALUES(?,1,1,'bulk')",
+                    new Object[]{String.format(java.util.Locale.ROOT, "bulk %03d", i)});
+        }
+        long last;
+        try (Cursor cursor = db.rawQuery("SELECT MAX(id) FROM books", null)) {
+            assertTrue(cursor.moveToFirst());
+            last = cursor.getLong(0);
+        }
+        helper.setFavorite(last, true);
+        assertEquals(100, helper.search("bulk").size());
+        assertEquals(1, helper.search("bulk", true).size());
+        assertEquals(last, helper.search("bulk", true).get(0).id);
+        db.execSQL("UPDATE books SET archived=1 WHERE id=?", new Object[]{last});
+        assertTrue(helper.search("bulk", true).isEmpty());
+    }
+
+    @Test public void favoritesRejectMissingOrInvalidBookIds() {
+        try {
+            helper.setFavorite(999, true);
+            fail("Missing book must be rejected");
+        } catch (SQLiteConstraintException expected) { }
+        try {
+            helper.setFavorite(0, true);
+            fail("Invalid ID must be rejected");
+        } catch (IllegalArgumentException expected) { }
+        assertTrue(helper.search("", true).isEmpty());
     }
 }

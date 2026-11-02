@@ -20,7 +20,8 @@ class SchemaTests(unittest.TestCase):
         self.db = sqlite3.connect(":memory:")
         self.db.execute("PRAGMA foreign_keys=ON")
         source = (JAVA / "CatalogDatabase.java").read_text()
-        for expression in re.findall(r"db\.execSQL\((.*?)\);", source, re.S):
+        schema = source.split("@Override public void onCreate", 1)[1].split("@Override public void onUpgrade", 1)[0]
+        for expression in re.findall(r"db\.execSQL\((.*?)\);", schema, re.S):
             self.db.execute(java_string(expression))
         self.sql = java_string(re.search(r"String sql = (.*?);", source, re.S).group(1))
         self.db.execute("INSERT INTO books(id,title,author_id,category_id,search_text) VALUES(1,'القدس',1,1,'القدس')")
@@ -29,19 +30,19 @@ class SchemaTests(unittest.TestCase):
         self.db.close()
 
     def test_actual_search_sql_executes(self):
-        self.assertEqual(len(self.db.execute(self.sql, ("%القدس%",)).fetchall()), 1)
+        self.assertEqual(len(self.db.execute(self.sql, ("%القدس%", "0")).fetchall()), 1)
 
     def test_sql_injection_is_data(self):
-        self.assertEqual(self.db.execute(self.sql, ("%' OR 1=1 --%",)).fetchall(), [])
+        self.assertEqual(self.db.execute(self.sql, ("%' OR 1=1 --%", "0")).fetchall(), [])
 
     def test_like_wildcard_escape(self):
         self.db.execute("UPDATE books SET search_text='100%_books'")
-        self.assertEqual(len(self.db.execute(self.sql, (r"%100\%\_%",)).fetchall()), 1)
-        self.assertEqual(self.db.execute(self.sql, (r"%100\%\_wrong%",)).fetchall(), [])
+        self.assertEqual(len(self.db.execute(self.sql, (r"%100\%\_%", "0")).fetchall()), 1)
+        self.assertEqual(self.db.execute(self.sql, (r"%100\%\_wrong%", "0")).fetchall(), [])
 
     def test_archived_books_are_hidden(self):
         self.db.execute("UPDATE books SET archived=1")
-        self.assertEqual(self.db.execute(self.sql, ("%",)).fetchall(), [])
+        self.assertEqual(self.db.execute(self.sql, ("%", "0")).fetchall(), [])
 
     def test_license_is_restricted(self):
         with self.assertRaises(sqlite3.IntegrityError):
@@ -63,7 +64,31 @@ class SchemaTests(unittest.TestCase):
     def test_result_limit(self):
         self.db.executemany("INSERT INTO books(title,author_id,category_id,search_text) VALUES(?,1,1,'القدس')",
                             [(str(i),) for i in range(120)])
-        self.assertEqual(len(self.db.execute(self.sql, ("%",)).fetchall()), 100)
+        self.assertEqual(len(self.db.execute(self.sql, ("%", "0")).fetchall()), 100)
+
+    def test_favorites_filter_and_flag(self):
+        self.assertEqual(self.db.execute(self.sql, ("%", "1")).fetchall(), [])
+        self.db.execute("INSERT INTO favorites VALUES(1)")
+        self.assertEqual(self.db.execute(self.sql, ("%", "1")).fetchone()[6], 1)
+        self.db.execute("DELETE FROM favorites")
+        self.assertEqual(self.db.execute(self.sql, ("%", "0")).fetchone()[6], 0)
+
+    def test_favorite_relationship_and_delete_cascade(self):
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.db.execute("INSERT INTO favorites VALUES(999)")
+        self.db.execute("INSERT INTO favorites VALUES(1)")
+        self.db.execute("DELETE FROM books WHERE id=1")
+        self.assertEqual(self.db.execute("SELECT * FROM favorites").fetchall(), [])
+
+    def test_favorites_are_filtered_before_limit(self):
+        self.db.executemany("INSERT INTO books(title,author_id,category_id,search_text) VALUES(?,1,1,'bulk')",
+                            [(f"bulk {i:03}",) for i in range(120)])
+        last = self.db.execute("SELECT MAX(id) FROM books").fetchone()[0]
+        self.db.execute("INSERT INTO favorites VALUES(?)", (last,))
+        self.assertEqual(len(self.db.execute(self.sql, ("%bulk%", "0")).fetchall()), 100)
+        rows = self.db.execute(self.sql, ("%bulk%", "1")).fetchall()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0][0], last)
 
 
 class RepositoryTests(unittest.TestCase):

@@ -151,16 +151,16 @@ public final class MainActivity extends Activity {
     private void loadBooks() {
         int request = ++generation;
         String query = search.getText().toString();
+        boolean filterFavorites = favoritesOnly;
         status.setText("جارٍ البحث…");
         worker.execute(() -> {
             try {
-                List<Book> books = database.search(query);
+                List<Book> books = database.search(query, filterFavorites);
                 handler.post(() -> {
                     if (isDestroyed() || request != generation) return;
                     results.removeAllViews();
                     int count = 0;
                     for (Book book : books) {
-                        if (favoritesOnly && !preferences.getBoolean("favorite." + book.id, false)) continue;
                         count++;
                         Button card = button(book.title + "\n" + book.author + "\n" + book.category);
                         card.setAllCaps(false);
@@ -185,14 +185,32 @@ public final class MainActivity extends Activity {
     }
 
     private void showBook(Book book) {
-        boolean favorite = preferences.getBoolean("favorite." + book.id, false);
+        boolean favorite = book.favorite;
         new AlertDialog.Builder(this).setTitle(book.title)
                 .setMessage(book.author + "\n" + book.category + "\n\n" + book.description
                         + "\n\nالإتاحة: بيانات وصفية فقط، لا يوجد ملف للقراءة.")
                 .setPositiveButton(favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة", (dialog, which) -> {
-                    preferences.edit().putBoolean("favorite." + book.id, !favorite).apply();
-                    loadBooks();
+                    saveFavorite(book.id, !favorite);
                 }).setNegativeButton("إغلاق", null).show();
+    }
+
+    private void saveFavorite(long bookId, boolean favorite) {
+        int request = ++generation;
+        // Do not let an earlier debounced search replace the result of this write.
+        if (pendingSearch != null) handler.removeCallbacks(pendingSearch);
+        status.setText("جارٍ حفظ المفضلة…");
+        worker.execute(() -> {
+            try {
+                database.setFavorite(bookId, favorite);
+                handler.post(() -> {
+                    if (!isDestroyed() && request == generation) loadBooks();
+                });
+            } catch (RuntimeException error) {
+                handler.post(() -> {
+                    if (!isDestroyed() && request == generation) status.setText("تعذر حفظ المفضلة. أعد المحاولة.");
+                });
+            }
+        });
     }
 
     @Override protected void onSaveInstanceState(Bundle out) {
