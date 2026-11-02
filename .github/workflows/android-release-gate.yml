@@ -35,6 +35,7 @@ jobs:
         run: |
           test -f app/src/main/AndroidManifest.xml
           python3 -m unittest discover -s tests -v
+          python3 tools/check_source_policy.py
           test -f app/src/main/java/org/alquds/library/MainActivity.java
           grep -q 'مكتبة القدس الجديدة' app/src/main/java/org/alquds/library/MainActivity.java
           grep -q 'android.permission.INTERNET' app/src/main/AndroidManifest.xml
