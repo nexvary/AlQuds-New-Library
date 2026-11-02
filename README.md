@@ -17,7 +17,11 @@
 ```sh
 python3 -m unittest discover -s tests -v
 gradle --no-daemon testDebugUnitTest assembleDebug lintDebug
+# With a running emulator/device (API 24 or 35):
+gradle --no-daemon connectedDebugAndroidTest
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 راجع [التقرير الفني](docs/TECHNICAL_AUDIT.md) و[سجل المراحل](DEVELOPMENT_PROGRESS.md). نجاح اختبارات Python لا يعني نجاح بناء Android. النسخة ليست إصدار إنتاج، ولا تُرسل استعلامات البحث أو المفضلة خارج الجهاز.
+
+اختبارات `CatalogDatabaseTest` تنشئ قاعدة عشوائية مستقلة لكل اختبار وتحذف تلك القاعدة فقط. تفحص الإنشاء والعلاقات والقيود واستمرار البيانات والبحث الفعلي على Android. سير `Android Device Tests` يشغلها على API 24 و35 ويكتب النتائج في ملخص المهمة دون الاعتماد على مساحة artifacts. يظل رفع APK في بوابة البناء مطلوباً ومستقلاً.

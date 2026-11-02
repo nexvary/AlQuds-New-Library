@@ -11,7 +11,12 @@ import java.util.List;
 /** Local catalog only. No network content, user accounts, or licensed book files. */
 public final class CatalogDatabase extends SQLiteOpenHelper {
     public CatalogDatabase(Context context) {
-        super(context, "alquds-catalog.db", null, 1);
+        this(context, "alquds-catalog.db");
+    }
+
+    // Package-private so instrumentation tests never open the user's catalog.
+    CatalogDatabase(Context context, String databaseName) {
+        super(context, databaseName, null, 1);
     }
 
     @Override public void onConfigure(SQLiteDatabase db) {
