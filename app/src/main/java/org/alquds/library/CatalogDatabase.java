@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Local catalog only. No network content, user accounts, or licensed book files. */
-public final class CatalogDatabase extends SQLiteOpenHelper {
+public final class CatalogDatabase extends SQLiteOpenHelper implements CatalogSource {
     public CatalogDatabase(Context context) {
         this(context, "alquds-catalog.db");
     }

@@ -24,7 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 public final class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
-    private CatalogDatabase database;
+    private CatalogSource database;
     private SharedPreferences preferences;
     private LinearLayout root, results;
     private TextView status;
@@ -38,7 +38,7 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         preferences = getSharedPreferences("library", MODE_PRIVATE);
         dark = preferences.getBoolean("dark", false);
-        database = new CatalogDatabase(getApplicationContext());
+        database = ((LibraryApplication) getApplication()).openCatalog();
         String query = state == null ? "" : state.getString("query", "");
         favoritesOnly = state != null && state.getBoolean("favorites");
         buildScreen(query);

@@ -13,6 +13,8 @@ android {
         versionCode 15
         versionName '1.4.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        // The two process probes must run separately with a force-stop between them.
+        testInstrumentationRunnerArguments notClass: 'org.alquds.library.ProcessRestartProbe'
     }
 
     compileOptions {

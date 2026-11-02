@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: android-devices-${{ github.event.pull_request.head.ref || github.ref }}
+  group: android-devices-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -44,7 +44,9 @@ jobs:
           target: default
           arch: x86_64
           disable-animations: true
-          script: gradle --no-daemon connectedDebugAndroidTest
+          script: |
+            gradle --no-daemon connectedDebugAndroidTest
+            python3 tests/run_process_restart.py
       - name: Publish test counts to job summary
         if: always()
         run: |
