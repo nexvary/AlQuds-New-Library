@@ -46,3 +46,9 @@ python3 tests/run_process_restart.py
 ```sh
 python3 tools/check_source_policy.py
 ```
+
+### النسخة التجريبية الحالية: 1.4.1
+
+[تنزيل ZIP يحتوي APK debug 1.4.1](https://github.com/nexvary/AlQuds-New-Library/actions/runs/41513381106/artifacts/13174841356). استُبدلت طريقة حفظ المفضلة بتخزين SQLite مع استيراد القيم القديمة مرة واحدة دون حذفها، وأصبحت المفضلة تُصفّى قبل حد 100 نتيجة. راجع [خطة ترحيل البيانات](docs/DATA_MIGRATION.md) و[خط أساس Android](docs/ANDROID_BASELINE.md) قبل الرجوع إلى APK أقدم.
+
+التحقق: 28 اختبار Python، و5 حالات JUnit، و25 حالة Android واختبارا force-stop على كل من API 24 و35، مع نجاح البناء وlint ورفع الحزمة. لا تزال حزمة اختبار محلية وليست إصدار إنتاج.
