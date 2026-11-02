@@ -40,7 +40,7 @@ Android أصلي، Java/Gradle، Android Gradle Plugin 8.7.3، compile/target SD
 
 شُغّل `python -m unittest discover -s tests -v`: نجح 12 اختباراً. تختبر SQL المستخرج من المصدر فعلياً على SQLite: العلاقات، ISBN، الترخيص، الأرشفة، حد النتائج، المعاملات وتهريب LIKE؛ كما تفحص الموارد والـManifest وأوامر CI.
 
-اختبارات JUnit الخمسة أُضيفت ولم تُشغّل محلياً. لا يتوفر javac أو Gradle أو Android SDK في بيئة التنفيذ. لذلك لم يُبن APK، ولم يُشغّل lint أو محاكي أو TalkBack، ولم تُثبت مطابقة WCAG أو جاهزية الإطلاق. XML صالح لا يثبت نجاح Android resource linking. CI معد لتشغيل البناء والاختبارات وlint، ويلزم فحص نتيجته قبل الدمج.
+لا يتوفر javac أو Gradle أو Android SDK محلياً. جرى التحقق لاحقاً على GitHub Actions في [التشغيل 41444048117](https://github.com/nexvary/AlQuds-New-Library/actions/runs/41444048117) للالتزام `d58424c763bade655436ba54da9fd13c5d728f25`: نجحت فحوص Python و`testDebugUnitTest` لاختبارات Java الخمسة و`assembleDebug` و`lintDebug`. بُني APK بنجاح، لكن خطوة Upload APK فشلت بسبب امتلاء حصة تخزين artifacts، فكانت النتيجة الكلية للتشغيل failure. لا يتوفر APK للتنزيل من هذا التشغيل. يلزم توفير مساحة أو زيادة الحصة ثم إعادة التشغيل؛ لا تُحذف ملفات أو artifacts تلقائياً. لم يُختبر محاكي أو TalkBack، ولم تُثبت مطابقة WCAG أو جاهزية الإطلاق. نجاح مهمة lint لا يعني خلو التقرير من جميع التحذيرات.
 
 ## خطوات التحقق التالية
 
