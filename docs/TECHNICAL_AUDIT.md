@@ -60,3 +60,7 @@ gradle --no-daemon clean testDebugUnitTest assembleDebug lintDebug
 ### نتائج Android للتعديلات الجديدة
 
 [التشغيل 41472910047](https://github.com/nexvary/AlQuds-New-Library/actions/runs/41472910047) عند `a8ff7ac`: نجح 11 اختبار قاعدة وبحث على API 24 و11 على API 35. نجح البناء وJUnit وlint في [41472909750](https://github.com/nexvary/AlQuds-New-Library/actions/runs/41472909750) وفشل Upload APK فقط برسالة حصة التخزين نفسها. أصبحت المرحلتان 5 و6 معتمدتين. أضيفت بعد هذا الالتزام ثلاث حالات ActivityScenario للمرحلة 7؛ نتائجها منفصلة ولا تُستنتج من نجاح حالات القاعدة.
+
+### نتائج الواجهة ودورة الحياة
+
+[التشغيل 41473954714](https://github.com/nexvary/AlQuds-New-Library/actions/runs/41473954714) للالتزام `e1aac21`: نجح 14/14 اختباراً على API 24 و14/14 على API 35، منها ثلاث حالات ActivityScenario لحفظ البحث والفلتر والثيم والتعافي من البحث الخالي. نجاح إعادة إنشاء Activity وإعادة إطلاقها لا يثبت توقف العملية أو دوران الجهاز الفعلي أو واجهة أخطاء التخزين؛ المرحلة 7 جزئية. نجح البناء وJUnit وlint في [41473954676](https://github.com/nexvary/AlQuds-New-Library/actions/runs/41473954676)، وفشل رفع APK لحصة التخزين. لا APK قابل للتنزيل من هذا التشغيل. لم يُنشر أو يُدمج إلى main.
