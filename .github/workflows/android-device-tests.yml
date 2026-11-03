@@ -46,7 +46,14 @@ jobs:
           disable-animations: true
           script: |
             gradle --no-daemon connectedDebugAndroidTest
+            adb pull /sdcard/Android/data/org.alquds.library/files/visual-review visual-review
             python3 tests/run_process_restart.py
+      - name: Upload visual review
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlQuds-visual-review-api-${{ matrix.api }}
+          path: visual-review/*.png
+          if-no-files-found: error
       - name: Publish test counts to job summary
         if: always()
         run: |

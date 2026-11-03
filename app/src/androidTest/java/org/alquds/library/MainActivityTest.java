@@ -107,12 +107,33 @@ public class MainActivityTest {
 
     @Test public void themeSurvivesRecreationAndActivityRelaunch() {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            awaitText(scenario, "النتائج: ");
+            captureScreen("stage11-light.png");
             scenario.onActivity(activity -> button(activity, "تفعيل الوضع الليلي").performClick());
+            awaitText(scenario, "النتائج: ");
+            captureScreen("stage11-dark.png");
             scenario.recreate();
             scenario.onActivity(activity -> assertNotNull(button(activity, "تفعيل الوضع النهاري")));
         }
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> assertNotNull(button(activity, "تفعيل الوضع النهاري")));
+        }
+    }
+
+    private static void captureScreen(String name) {
+        android.app.Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.waitForIdleSync();
+        android.graphics.Bitmap bitmap = instrumentation.getUiAutomation().takeScreenshot();
+        assertNotNull("Screenshot unavailable", bitmap);
+        java.io.File directory = new java.io.File(instrumentation.getTargetContext()
+                .getExternalFilesDir(null), "visual-review");
+        assertTrue(directory.isDirectory() || directory.mkdirs());
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(new java.io.File(directory, name))) {
+            assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output));
+        } catch (java.io.IOException error) {
+            throw new AssertionError(error);
+        } finally {
+            bitmap.recycle();
         }
     }
 

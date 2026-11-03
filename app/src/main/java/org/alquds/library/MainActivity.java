@@ -4,6 +4,13 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.content.res.ColorStateList;
+import android.view.Gravity;
+import android.view.ContextThemeWrapper;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,6 +21,7 @@ import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import java.util.List;
@@ -31,7 +39,7 @@ public final class MainActivity extends Activity {
     private EditText search;
     private boolean dark, favoritesOnly;
     private int generation;
-    private int foreground, background, muted;
+    private int foreground, background, muted, surface, outline;
     private Runnable pendingSearch;
 
     @Override public void onCreate(Bundle state) {
@@ -62,13 +70,35 @@ public final class MainActivity extends Activity {
         view.setText(label);
         view.setTextColor(foreground);
         view.setMinHeight(dp(48));
+        view.setAllCaps(false);
+        view.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        view.setPadding(dp(16), dp(12), dp(16), dp(12));
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(surface);
+        shape.setCornerRadius(dp(16));
+        shape.setStroke(dp(1), outline);
+        view.setBackground(new RippleDrawable(ColorStateList.valueOf(
+                Color.parseColor(dark ? "#335A8278" : "#22618778")), shape, null));
+        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
+        layout.setMargins(0, dp(4), 0, dp(8));
+        view.setLayoutParams(layout);
         return view;
+    }
+
+    // Bundled color PNGs retain their original colors in both themes; no tint/emoji font.
+    private void icon(TextView view, int resource, int size) {
+        Drawable drawable = getDrawable(resource);
+        drawable.setBounds(0, 0, dp(size), dp(size));
+        view.setCompoundDrawablesRelative(drawable, null, null, null);
+        view.setCompoundDrawablePadding(dp(12));
     }
 
     private void buildScreen(String query) {
         foreground = Color.parseColor(dark ? "#F4F0E6" : "#102E35");
         background = Color.parseColor(dark ? "#10232A" : "#FAF7F0");
         muted = Color.parseColor(dark ? "#D3CBB8" : "#4B5D5F");
+        surface = Color.parseColor(dark ? "#19353D" : "#FFFFFF");
+        outline = Color.parseColor(dark ? "#4B686B" : "#CCD9D3");
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -95,12 +125,23 @@ public final class MainActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
         scroll.addView(content);
-        TextView title = text("مكتبة القدس الجديدة", 28, foreground);
+        LinearLayout identity = new LinearLayout(this);
+        identity.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView emblem = new ImageView(this);
+        emblem.setImageResource(R.drawable.ic_books);
+        emblem.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        emblem.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        identity.addView(emblem, new LinearLayout.LayoutParams(dp(64), dp(64)));
+        TextView title = text("مكتبة القدس الجديدة", 26, foreground);
+        title.setTypeface(null, Typeface.BOLD);
+        title.setPadding(dp(12), dp(8), dp(12), dp(8));
         if (android.os.Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
-        content.addView(title);
+        identity.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        content.addView(identity);
         content.addView(text("مساحة للمعرفة، ونافذة إلى القدس", 18, muted));
         content.addView(text("نسخة تأسيسية • فهرس محلي تجريبي", 14, muted));
         Button theme = button(dark ? "تفعيل الوضع النهاري" : "تفعيل الوضع الليلي");
+        icon(theme, dark ? R.drawable.ic_sun : R.drawable.ic_moon, 32);
         theme.setOnClickListener(v -> {
             dark = !dark;
             preferences.edit().putBoolean("dark", dark).apply();
@@ -120,11 +161,16 @@ public final class MainActivity extends Activity {
         search.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
         search.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(200)});
         search.setText(query);
+        icon(search, R.drawable.ic_search, 28);
         content.addView(search);
         Button favorites = button(favoritesOnly ? "عرض جميع الكتب" : "عرض مفضلتي على هذا الجهاز");
+        icon(favorites, favoritesOnly ? R.drawable.ic_books : R.drawable.ic_favorite, 32);
+        favorites.setSelected(favoritesOnly);
         favorites.setOnClickListener(v -> {
             favoritesOnly = !favoritesOnly;
             favorites.setText(favoritesOnly ? "عرض جميع الكتب" : "عرض مفضلتي على هذا الجهاز");
+            icon(favorites, favoritesOnly ? R.drawable.ic_books : R.drawable.ic_favorite, 32);
+            favorites.setSelected(favoritesOnly);
             loadBooks();
         });
         content.addView(favorites);
@@ -164,9 +210,13 @@ public final class MainActivity extends Activity {
                         count++;
                         Button card = button(book.title + "\n" + book.author + "\n" + book.category);
                         card.setAllCaps(false);
+                        icon(card, book.favorite ? R.drawable.ic_favorite : R.drawable.ic_books, 44);
+                        card.setTextSize(17);
+                        card.setContentDescription(book.title + "، " + book.author + "، " + book.category
+                                + (book.favorite ? "، محفوظ في المفضلة" : "") + "، عرض التفاصيل");
                         card.setPadding(dp(12), dp(16), dp(12), dp(16));
                         card.setOnClickListener(v -> showBook(book));
-                        results.addView(card, new LinearLayout.LayoutParams(-1, -2));
+                        results.addView(card);
                     }
                     status.setText(count == 0 ? "لا توجد نتائج. جرّب كلمات أخرى أو اعرض جميع الكتب."
                             : "النتائج: " + count + " — عرض حتى 100 سجل");
@@ -186,7 +236,10 @@ public final class MainActivity extends Activity {
 
     private void showBook(Book book) {
         boolean favorite = book.favorite;
-        new AlertDialog.Builder(this).setTitle(book.title)
+        ContextThemeWrapper dialogTheme = new ContextThemeWrapper(this, dark
+                ? android.R.style.Theme_Material_Dialog_Alert : android.R.style.Theme_Material_Light_Dialog_Alert);
+        new AlertDialog.Builder(dialogTheme).setTitle(book.title)
+                .setIcon(book.favorite ? R.drawable.ic_favorite : R.drawable.ic_books)
                 .setMessage(book.author + "\n" + book.category + "\n\n" + book.description
                         + "\n\nالإتاحة: بيانات وصفية فقط، لا يوجد ملف للقراءة.")
                 .setPositiveButton(favorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة", (dialog, which) -> {
