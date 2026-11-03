@@ -1,0 +1,32 @@
+{
+  "repository": "https://github.com/microsoft/fluentui-emoji",
+  "commit": "1ffb34c752ecf5d402f04cfb4b392c77f57c54bc",
+  "license": "MIT",
+  "assets": [
+    {
+      "file": "app/src/main/res/drawable-nodpi/ic_books.png",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Books/3D/books_3d.png",
+      "sha256": "36f75eaa1e1a849fc950f43962b447c206d96244858468240a6a81beaa97f7be"
+    },
+    {
+      "file": "app/src/main/res/drawable-nodpi/ic_search.png",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Magnifying%20glass%20tilted%20left/3D/magnifying_glass_tilted_left_3d.png",
+      "sha256": "e8fea91e4652a36486aa9392a67873c987a13389afdae06bbcdae78ab30b4f4f"
+    },
+    {
+      "file": "app/src/main/res/drawable-nodpi/ic_favorite.png",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Star/3D/star_3d.png",
+      "sha256": "b935cdf502b69054bc2b08e7ba4e4eaba6499564a2041dd77d6291e21bf8cfe8"
+    },
+    {
+      "file": "app/src/main/res/drawable-nodpi/ic_moon.png",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Crescent%20moon/3D/crescent_moon_3d.png",
+      "sha256": "0a5b5192390983789d430e37582dfda343be19bf8246feda73108484771ba09d"
+    },
+    {
+      "file": "app/src/main/res/drawable-nodpi/ic_sun.png",
+      "url": "https://raw.githubusercontent.com/microsoft/fluentui-emoji/1ffb34c752ecf5d402f04cfb4b392c77f57c54bc/assets/Sun/3D/sun_3d.png",
+      "sha256": "c9bb15d03d4b1e6151d97e12119ac93bbd2bcb5e713a49c1fcfc11ece54caec1"
+    }
+  ]
+}

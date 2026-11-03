@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.alquds.library'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'org.alquds.library'
+        minSdk 24
+        targetSdk 35
+        versionCode 17
+        versionName '1.5.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        // The two process probes must run separately with a force-stop between them.
+        testInstrumentationRunnerArguments notClass: 'org.alquds.library.ProcessRestartProbe'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
+

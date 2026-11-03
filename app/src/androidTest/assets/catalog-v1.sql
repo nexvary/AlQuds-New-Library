@@ -1,0 +1,10 @@
+CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE books (id INTEGER PRIMARY KEY, title TEXT NOT NULL, author_id INTEGER NOT NULL REFERENCES authors(id), category_id INTEGER NOT NULL REFERENCES categories(id), description TEXT NOT NULL DEFAULT '', isbn TEXT UNIQUE, license TEXT NOT NULL DEFAULT 'metadata_only' CHECK(license IN ('metadata_only','public_domain','licensed')), archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0,1)), search_text TEXT NOT NULL);
+CREATE INDEX books_author ON books(author_id);
+CREATE INDEX books_category ON books(category_id, archived);
+INSERT INTO authors VALUES(7,'مؤلف محفوظ');
+INSERT INTO categories VALUES(9,'تصنيف محفوظ');
+INSERT INTO books VALUES(42,'سجل قديم',7,9,'وصف محفوظ','9780000000000','licensed',0,'سجل قديم مؤلف محفوظ تصنيف محفوظ');
+INSERT INTO books VALUES(43,'سجل مؤرشف',7,9,'وصف مؤرشف',NULL,'metadata_only',1,'سجل مؤرشف');
+PRAGMA user_version=1;
